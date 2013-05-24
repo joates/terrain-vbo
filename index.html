@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+
+    <title>Terrain (WebGL+VBO)</title>
+
+    <style>
+
+      body { font-family: Monospace; font-size: 13px;
+             color: #eee; background-color: #000;
+             margin: 0px; padding: 0px; overflow: hidden;
+      }
+
+    </style>
+
+    <script src="build/three.min.js"></script>
+    <script src="js/terrain/getHeightData.js"></script>
+    <script src="js/terrain/buildTerrainMesh.js"></script>
+    <script src="js/terrain/loadTriangleMeshToVBO.js"></script>
+    <script src="js/Detector.js"></script>
+    <script src="js/libs/stats.min.js"></script>
+    <script src="js/controls/OrbitControls.js"></script>
+
+  </head>
+
+  <body>
+
+    <script>
+
+      if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+
+      //
+
+      var scene, camera, controls,
+          stats, renderer;
+
+      var WIDTH  = window.innerWidth,
+          HEIGHT = window.innerHeight;
+
+      //
+
+      init();
+      animate();
+
+      //
+
+      function init() {
+
+        scene = new THREE.Scene();
+        scene.fog = new THREE.Fog( 0x050505, 2000, 3500 );
+
+        camera = new THREE.PerspectiveCamera( 40, WIDTH / HEIGHT, 1, 100000 );
+        camera.position.x = 150;
+        camera.position.y = 50;
+        camera.position.z = 150;
+        camera.lookAt( scene.position );
+
+        controls = new THREE.OrbitControls( camera );
+
+        //
+
+        scene.add( new THREE.AmbientLight( 0x444444 ) );
+
+        var light = new THREE.DirectionalLight( 0xffffff, 1.5 );
+        light.position.set( 0, 1, 0 ).normalize();
+        scene.add( light );
+
+        //
+
+        var img = new Image();
+        img.onload = function() {
+
+          var heightData = getHeightData( img, 256 );
+
+          // buildTerrainMesh( size, heightData, seaLevel_isOptional )
+          var terrainMesh = buildTerrainMesh( 256, heightData, 1.0 );
+
+          var terrain = loadTriangleMeshToVBO( terrainMesh );
+
+          scene.add( terrain );
+
+        }
+        img.src = 'textures/heightmap256.jpg';
+
+        //
+
+        renderer = new THREE.WebGLRenderer( { antialias: false, alpha: false } );
+        renderer.setSize( WIDTH, HEIGHT );
+        renderer.setClearColor( scene.fog.color, 1 );
+
+        renderer.gammaInput = true;
+        renderer.gammaOutput = true;
+        renderer.physicallyBasedShading = true;
+
+        document.body.appendChild( renderer.domElement );
+
+        //
+
+        stats = new Stats();
+        stats.domElement.style.position = 'absolute';
+        stats.domElement.style.top = '0px';
+        document.body.appendChild( stats.domElement );
+
+        //
+
+        window.addEventListener( 'resize', onWindowResize, false );
+
+      }
+
+      function onWindowResize() {
+
+        WIDTH  = window.innerWidth;
+        HEIGHT = window.innerHeight;
+
+        camera.aspect = WIDTH / HEIGHT;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize( WIDTH, HEIGHT );
+
+      }
+
+      //
+
+      function animate() {
+
+        requestAnimationFrame( animate );
+        update();
+        render();
+
+      }
+
+      //
+
+      function update() {
+
+        stats.update();
+        controls.update();
+
+      }
+
+      //
+
+      function render() {
+
+        renderer.render( scene, camera );
+
+      }
+
+    </script>
+
+  </body>
+
+</html>
